@@ -121,9 +121,11 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, categories, 
             className="appearance-none w-48 p-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 rounded-lg border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="all">Todas las categorías</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.name}>{cat.name}</option>
-            ))}
+            {[...categories]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(cat => (
+                <option key={cat.id} value={cat.name}>{cat.name}</option>
+              ))}
           </select>
           <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
         </div>

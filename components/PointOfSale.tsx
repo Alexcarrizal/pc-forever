@@ -96,7 +96,11 @@ const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, servic
   const [isCustomItemModalOpen, setIsCustomItemModalOpen] = useState(false);
 
 
-  const categories = useMemo(() => ["Servicios", ...new Set(products.map(p => p.category))], [products]);
+  const categories = useMemo(() => {
+    const uniqueCategories = ["Servicios", ...new Set(products.map(p => p.category))];
+    uniqueCategories.sort((a, b) => a.localeCompare(b));
+    return uniqueCategories;
+  }, [products]);
 
   const allServicesForDisplay = useMemo(() => {
     const all = [
