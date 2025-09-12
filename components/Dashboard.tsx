@@ -241,19 +241,22 @@ const Dashboard: React.FC<DashboardProps> = ({
       date: new Date().toISOString(),
       type: 'Ingreso',
       description: `Cobro de ${module.name}`,
-      client: clients.find(c => c.id === (module as any).clientId)?.name || 'N/A', // Assuming clientId is on module
+      client: clients.find(c => c.id === module.clientId)?.name || 'N/A',
       paymentMethod: paymentMethod,
       amount: saleData.netReceived,
     });
     
     const saleItems = [...module.accountProducts];
+    
+    // Award points logic
     const timeInSeconds = module.startTime ? (Date.now() - module.startTime) / 1000 : 0;
     const hours = Math.floor(timeInSeconds / 3600);
-    if(hours > 0 && module.rateId){
-      const client = clients.find(c => c.id === (module as any).clientId);
-      if(client && module.type === ModuleType.Console){
-        setClients(prev => prev.map(c => c.id === client.id ? {...c, points: c.points + hours} : c));
-      }
+    if (hours > 0 && module.rateId && module.clientId) {
+        const client = clients.find(c => c.id === module.clientId);
+        // Award points only for consoles, to actual clients (not public), and not on free sessions
+        if (client && client.id !== 'c0' && module.type === ModuleType.Console && module.sessionType !== SessionType.Redeem) {
+            setClients(prev => prev.map(c => c.id === client.id ? { ...c, points: (c.points || 0) + hours } : c));
+        }
     }
 
 
@@ -270,7 +273,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const saleRecord: SaleRecord = {
       folio: `F-${Date.now()}`,
       date: new Date().toISOString(),
-      client: clients.find(c => c.id === (module as any).clientId)?.name || 'Venta al Público',
+      client: clients.find(c => c.id === module.clientId)?.name || 'Venta al Público',
       paymentMethod: paymentMethod,
       items: saleItems,
       subtotal: saleData.subtotal,

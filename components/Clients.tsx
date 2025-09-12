@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Client } from '../types';
 import AddClientModal from './AddClientModal';
-import { EditIcon, DeleteIcon } from './icons';
+import AdjustPointsModal from './AdjustPointsModal';
+import { EditIcon, DeleteIcon, StarIcon, PlusCircleIcon } from './icons';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 
 interface ClientsProps {
@@ -13,6 +14,7 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
+  const [adjustingPointsClient, setAdjustingPointsClient] = useState<Client | null>(null);
 
   const handleAddClient = () => {
     setEditingClient(null);
@@ -45,6 +47,16 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients }) => {
     setEditingClient(null);
   };
 
+  const handleSavePoints = (adjustment: number) => {
+    if (!adjustingPointsClient) return;
+    setClients(prev => prev.map(c =>
+        c.id === adjustingPointsClient.id
+            ? { ...c, points: Math.max(0, (c.points || 0) + adjustment) } // Ensure points don't go below 0
+            : c
+    ));
+    setAdjustingPointsClient(null);
+  };
+
   return (
     <div className="text-slate-800 dark:text-slate-200">
       <div className="flex justify-between items-center mb-6">
@@ -73,18 +85,32 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients }) => {
                 <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                   <td className="p-4 font-medium text-slate-800 dark:text-white">{client.name}</td>
                   <td className="p-4 text-slate-600 dark:text-slate-300">{client.phone || 'N/A'}</td>
-                  <td className={`p-4 font-bold ${client.points > 0 ? 'text-yellow-500' : 'text-slate-600 dark:text-slate-300'}`}>
-                    {client.points}
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                        <StarIcon className={`w-5 h-5 ${client.points > 0 ? 'text-yellow-400' : 'text-slate-400'}`} />
+                        <span className={`font-bold ${client.points > 0 ? 'text-slate-800 dark:text-white' : 'text-slate-500'}`}>
+                            {client.points}
+                        </span>
+                    </div>
                   </td>
                   <td className="p-4">
                     <div className="flex justify-end items-center gap-4 text-slate-400">
-                      <button onClick={() => handleEditClient(client)} className="hover:text-blue-500 transition-colors">
+                      <button 
+                        onClick={() => setAdjustingPointsClient(client)} 
+                        disabled={client.id === 'c0'}
+                        className="hover:text-yellow-500 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+                        title="Ajustar Puntos"
+                      >
+                          <PlusCircleIcon className="w-5 h-5"/>
+                      </button>
+                      <button onClick={() => handleEditClient(client)} className="hover:text-blue-500 transition-colors" title="Editar Cliente">
                         <EditIcon className="w-5 h-5"/>
                       </button>
                       <button 
                         onClick={() => handleDeleteClient(client)} 
                         className={`transition-colors ${client.id === 'c0' ? 'cursor-not-allowed opacity-30' : 'hover:text-red-500'}`}
                         disabled={client.id === 'c0'}
+                        title="Eliminar Cliente"
                       >
                         <DeleteIcon className="w-5 h-5"/>
                       </button>
@@ -116,6 +142,15 @@ const Clients: React.FC<ClientsProps> = ({ clients, setClients }) => {
             onConfirm={confirmDelete}
             itemName={deletingClient.name}
         />
+      )}
+
+      {adjustingPointsClient && (
+          <AdjustPointsModal
+              isOpen={!!adjustingPointsClient}
+              onClose={() => setAdjustingPointsClient(null)}
+              onSave={handleSavePoints}
+              client={adjustingPointsClient}
+          />
       )}
     </div>
   );
