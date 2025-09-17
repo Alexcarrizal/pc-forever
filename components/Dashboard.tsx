@@ -249,13 +249,26 @@ const Dashboard: React.FC<DashboardProps> = ({
     const saleItems = [...module.accountProducts];
     
     // Award points logic
-    const timeInSeconds = module.startTime ? (Date.now() - module.startTime) / 1000 : 0;
+    let timeInSeconds = 0;
+    if (module.startTime) {
+        if (module.sessionType === SessionType.Fixed && module.endTime) {
+            // For fixed time, award points based on the duration paid for.
+            timeInSeconds = (module.endTime - module.startTime) / 1000;
+        } else if (module.sessionType === SessionType.Free) {
+            // For free time, use the actual elapsed time.
+            timeInSeconds = (Date.now() - module.startTime) / 1000;
+        }
+    }
+
     const hours = Math.floor(timeInSeconds / 3600);
-    if (hours > 0 && module.rateId && module.clientId) {
+    
+    // Award 1 point per hour for registered clients on paid sessions (Free or Fixed Time).
+    if (hours > 0 && module.clientId) {
         const client = clients.find(c => c.id === module.clientId);
-        // Award points only for consoles, to actual clients (not public), and not on free sessions
-        if (client && client.id !== 'c0' && module.type === ModuleType.Console && module.sessionType !== SessionType.Redeem) {
-            setClients(prev => prev.map(c => c.id === client.id ? { ...c, points: (c.points || 0) + hours } : c));
+        if (client && client.id !== 'c0' && module.sessionType !== SessionType.Redeem) {
+            setClients(prev => prev.map(c => 
+                c.id === client.id ? { ...c, points: (c.points || 0) + hours } : c
+            ));
         }
     }
 
