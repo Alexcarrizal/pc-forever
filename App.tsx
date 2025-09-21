@@ -79,6 +79,7 @@ const sanitizeData = (key: string, data: any, fallback: any) => {
                     salePrice: item.salePrice || 0,
                 }));
             case 'salesHistory':
+            case 'fullSalesHistory': // Sanitize full history too
                 return data.map(item => ({
                     ...item,
                     items: item.items || [],
@@ -137,6 +138,7 @@ const App: React.FC = () => {
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [debitCards, setDebitCards] = useState<DebitCard[]>([]);
   const [salesHistory, setSalesHistory] = useState<SaleRecord[]>([]);
+  const [fullSalesHistory, setFullSalesHistory] = useState<SaleRecord[]>([]);
   const [apartados, setApartados] = useState<Apartado[]>([]);
   const [electronicRecharges, setElectronicRecharges] = useState<ElectronicRecharge[]>([]);
   
@@ -335,7 +337,7 @@ const App: React.FC = () => {
                 modules: initialData.modules, clients: initialData.clients, products: initialData.products,
                 categories: initialData.categories, rates: initialData.rates, businessInfo: initialData.businessInfo,
                 creditCards: initialData.creditCards, debitCards: initialData.debitCards, apartados: initialData.apartados,
-                salesHistory: [], cashFlow: [], services: initialData.services, tieredPricing: initialData.tieredPricing,
+                salesHistory: [], fullSalesHistory: [], cashFlow: [], services: initialData.services, tieredPricing: initialData.tieredPricing,
                 electronicRecharges: initialData.electronicRecharges,
             };
 
@@ -347,7 +349,7 @@ const App: React.FC = () => {
             setModules(initialStates.modules); setClients(initialStates.clients); setProducts(initialStates.products);
             setCategories(initialStates.categories); setRates(initialStates.rates); setBusinessInfo(initialStates.businessInfo);
             setCreditCards(initialStates.creditCards); setDebitCards(initialStates.debitCards); setApartados(initialStates.apartados);
-            setSalesHistory(initialStates.salesHistory); setCashFlow(initialStates.cashFlow);
+            setSalesHistory(initialStates.salesHistory); setFullSalesHistory(initialStates.fullSalesHistory); setCashFlow(initialStates.cashFlow);
             setServices(initialStates.services); setTieredPricing(initialStates.tieredPricing);
             setElectronicRecharges(initialStates.electronicRecharges);
         } else {
@@ -362,6 +364,7 @@ const App: React.FC = () => {
                 { key: 'creditCards', setter: setCreditCards, fallback: initialData.creditCards },
                 { key: 'debitCards', setter: setDebitCards, fallback: initialData.debitCards },
                 { key: 'salesHistory', setter: setSalesHistory, fallback: [] },
+                { key: 'fullSalesHistory', setter: setFullSalesHistory, fallback: [] },
                 { key: 'cashFlow', setter: setCashFlow, fallback: [] },
                 { key: 'apartados', setter: setApartados, fallback: initialData.apartados },
                 { key: 'services', setter: setServices, fallback: initialData.services },
@@ -410,6 +413,7 @@ const App: React.FC = () => {
       'creditCards': creditCards,
       'debitCards': debitCards,
       'salesHistory': salesHistory,
+      'fullSalesHistory': fullSalesHistory,
       'apartados': apartados,
       'services': services,
       'tieredPricing': tieredPricing,
@@ -425,7 +429,7 @@ const App: React.FC = () => {
     });
   }, [
       isLoading, modules, clients, products, categories, rates, businessInfo, 
-      cashFlow, creditCards, debitCards, salesHistory, apartados, services, tieredPricing,
+      cashFlow, creditCards, debitCards, salesHistory, fullSalesHistory, apartados, services, tieredPricing,
       electronicRecharges
   ]);
 
@@ -445,6 +449,7 @@ const App: React.FC = () => {
 
   const handleAddSaleToHistory = useCallback((sale: SaleRecord) => {
     setSalesHistory(prev => [...prev, sale]);
+    setFullSalesHistory(prev => [...prev, sale]);
   }, []);
 
   const handleSaveApartado = useCallback((apartado: Omit<Apartado, 'id'>) => {
@@ -486,6 +491,7 @@ const App: React.FC = () => {
         { key: 'creditCards', setter: setCreditCards, default: initialData.creditCards },
         { key: 'debitCards', setter: setDebitCards, default: initialData.debitCards },
         { key: 'salesHistory', setter: setSalesHistory, default: [] },
+        { key: 'fullSalesHistory', setter: setFullSalesHistory, default: [] },
         { key: 'cashFlow', setter: setCashFlow, default: [] },
         { key: 'apartados', setter: setApartados, default: initialData.apartados },
         { key: 'services', setter: setServices, default: initialData.services },
@@ -532,7 +538,7 @@ const App: React.FC = () => {
         case 'dashboard':
           return <Dashboard modules={modules} setModules={setModules} clients={clients} setClients={setClients} rates={rates} addTransaction={addTransaction} onShowReceipt={handleShowReceipt} products={products} setProducts={setProducts} onAddSaleToHistory={handleAddSaleToHistory} salesHistory={salesHistory} cashFlow={cashFlow} showBackupReminder={showBackupReminder} setActiveView={setActiveView} isIncomeVisible={isIncomeVisible} setIsIncomeVisible={setIsIncomeVisible} />;
         case 'pos':
-          return <PointOfSale salesHistory={salesHistory} products={products} setProducts={setProducts} services={services} tieredPricing={tieredPricing} clients={clients} setClients={setClients} onShowReceipt={handleShowReceipt} addTransaction={addTransaction} onAddSaleToHistory={handleAddSaleToHistory}/>;
+          return <PointOfSale products={products} setProducts={setProducts} services={services} tieredPricing={tieredPricing} clients={clients} setClients={setClients} onShowReceipt={handleShowReceipt} addTransaction={addTransaction} onAddSaleToHistory={handleAddSaleToHistory} fullSalesHistory={fullSalesHistory}/>;
         case 'recharges':
           return <Recharges recharges={electronicRecharges} setRecharges={setElectronicRecharges} addTransaction={addTransaction} />;
         case 'reports':
@@ -560,7 +566,7 @@ const App: React.FC = () => {
                 electronicRecharges={electronicRecharges}
             />;
         case 'salesAnalysis':
-          return <SalesAnalysis salesHistory={salesHistory} />;
+          return <SalesAnalysis salesHistory={fullSalesHistory} />;
         case 'cashbox':
           return <Cashbox cashFlow={cashFlow} removeTransaction={removeTransaction} onOpenCloseModal={handleOpenCloseModal} />;
         case 'clients':
@@ -578,7 +584,7 @@ const App: React.FC = () => {
                     onResetWeeklyReport={handleResetWeeklyReport}
                     allData={{
                         admin, modules, clients, products, categories, rates, businessInfo,
-                        cashFlow, creditCards, debitCards, salesHistory, apartados, services, tieredPricing,
+                        cashFlow, creditCards, debitCards, salesHistory, fullSalesHistory, apartados, services, tieredPricing,
                         electronicRecharges,
                     }}
                     onRestoreAllData={handleRestoreAllData}

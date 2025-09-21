@@ -83,10 +83,10 @@ interface PointOfSaleProps {
   onShowReceipt: (data: SaleRecord) => void;
   addTransaction: (transaction: CashFlowTransaction) => void;
   onAddSaleToHistory: (sale: SaleRecord) => void;
-  salesHistory: SaleRecord[];
+  fullSalesHistory: SaleRecord[];
 }
 
-const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, services, tieredPricing, clients, setClients, onShowReceipt, addTransaction, onAddSaleToHistory, salesHistory }) => {
+const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, services, tieredPricing, clients, setClients, onShowReceipt, addTransaction, onAddSaleToHistory, fullSalesHistory }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -117,7 +117,7 @@ const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, servic
   
   const top10Products = useMemo(() => {
     const salesCountMap = new Map<string, number>();
-    salesHistory.forEach(sale => {
+    fullSalesHistory.forEach(sale => {
         sale.items.forEach(item => {
             if (!item.isService && !item.id.startsWith('time-') && !item.id.startsWith('custom-')) {
                 salesCountMap.set(item.id, (salesCountMap.get(item.id) || 0) + item.quantity);
@@ -135,14 +135,14 @@ const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, servic
             return countB - countA;
         })
         .slice(0, 10);
-  }, [products, salesHistory]);
+  }, [products, fullSalesHistory]);
 
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === 'Servicios') return [];
 
     const salesCountMap = new Map<string, number>();
-    salesHistory.forEach(sale => {
+    fullSalesHistory.forEach(sale => {
         sale.items.forEach(item => {
             if (!item.isService && !item.id.startsWith('time-') && !item.id.startsWith('custom-')) {
                 salesCountMap.set(item.id, (salesCountMap.get(item.id) || 0) + item.quantity);
@@ -162,7 +162,7 @@ const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, servic
       const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [products, searchTerm, selectedCategory, salesHistory]);
+  }, [products, searchTerm, selectedCategory, fullSalesHistory]);
   
   const addToCart = (item: CartItem) => {
     setCart(prevCart => {
@@ -288,7 +288,7 @@ const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, servic
                 <button 
                     key={item.id}
                     onClick={() => isProduct ? handleProductClick(item as Product) : handleServiceClick(item as Service)}
-                    className={`p-4 rounded-lg text-left hover:scale-105 transition-transform duration-200 border ${isProduct && top10Products.some(p => p.id === item.id) ? 'bg-white dark:bg-slate-800 border-2 border-amber-400 shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
+                    className={`relative p-4 rounded-lg text-left hover:scale-105 transition-transform duration-200 border ${isProduct && top10Products.some(p => p.id === item.id) ? 'bg-white dark:bg-slate-800 border-2 border-amber-400 shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
                 >
                     {isProduct && top10Products.some(p => p.id === item.id) && (
                          <div className="absolute top-2 right-2 flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
