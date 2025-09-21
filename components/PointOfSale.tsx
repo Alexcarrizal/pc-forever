@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Product, CartItem, Client, SaleRecord, CashFlowTransaction, Service, TieredServicePricing, VolumeTier } from '../types';
-import { ChevronDownIcon, DeleteIcon, XIcon, SearchIcon, PlusCircleIcon, StarIcon } from './icons';
+import { ChevronDownIcon, DeleteIcon, XIcon, SearchIcon, PlusCircleIcon, StarIcon, GridIcon, ListBulletIcon } from './icons';
 import ConfirmSaleModal from './ConfirmSaleModal';
 import SellOnDemandServiceModal from './SellOnDemandServiceModal';
 import AddClientModal from './AddClientModal';
@@ -94,6 +94,7 @@ const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, servic
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
   const [modalState, setModalState] = useState<{ type: 'on-demand' | 'volume' | 'none', data?: any }>({ type: 'none' });
   const [isCustomItemModalOpen, setIsCustomItemModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
 
   const categories = useMemo(() => {
@@ -279,6 +280,76 @@ const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, servic
         }
     };
 
+    const renderItem = (item: Product | Service) => {
+        const isProduct = 'salePrice' in item;
+
+        if (viewMode === 'grid') {
+            return (
+                <button 
+                    key={item.id}
+                    onClick={() => isProduct ? handleProductClick(item as Product) : handleServiceClick(item as Service)}
+                    className={`p-4 rounded-lg text-left hover:scale-105 transition-transform duration-200 border ${isProduct && top10Products.some(p => p.id === item.id) ? 'bg-white dark:bg-slate-800 border-2 border-amber-400 shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
+                >
+                    {isProduct && top10Products.some(p => p.id === item.id) && (
+                         <div className="absolute top-2 right-2 flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                            <StarIcon className="w-3 h-3"/>
+                            <span>TOP</span>
+                        </div>
+                    )}
+                    <h3 className="font-bold text-slate-800 dark:text-white truncate text-lg mt-1">{item.name}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{isProduct ? (item as Product).category : 'Servicio'}</p>
+                    <div className="flex justify-between items-end mt-2">
+                        <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                            {isProduct ? `$${(item as Product).salePrice.toFixed(2)}` : renderServicePrice(item as Service)}
+                        </p>
+                        {isProduct && (
+                            <p className="text-xs font-semibold bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">{(item as Product).stock} disp.</p>
+                        )}
+                    </div>
+                </button>
+            );
+        }
+
+        // List View
+        return (
+            <button
+                key={item.id}
+                onClick={() => isProduct ? handleProductClick(item as Product) : handleServiceClick(item as Service)}
+                className="w-full bg-white dark:bg-slate-800 p-3 rounded-lg text-left transition-colors duration-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-4"
+            >
+                <div className="flex-grow">
+                    <h3 className="font-bold text-slate-800 dark:text-white">{item.name}</h3>
+                    {isProduct ? (
+                        <>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                {(item as Product).category} {(item as Product).distributor && `| ${(item as Product).distributor}`}
+                            </p>
+                            {((item as Product).barcode || (item as Product).warranty) && (
+                                <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1">
+                                    {(item as Product).barcode && `Código: ${(item as Product).barcode}`}
+                                    {(item as Product).barcode && (item as Product).warranty && ' | '}
+                                    {(item as Product).warranty && `Garantía: ${(item as Product).warranty}`}
+                                </p>
+                            )}
+                        </>
+                    ) : (
+                         <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Servicio de tipo: {(item as Service).pricingType === 'fixed' ? 'Precio Fijo' : (item as Service).pricingType === 'volume' ? 'Por Volumen' : 'A Cotizar'}
+                        </p>
+                    )}
+                </div>
+                <div className="flex items-center gap-4 flex-shrink-0">
+                    {isProduct && (item as Product).managesInventory && (
+                         <p className="text-sm font-semibold bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300 px-2 py-1 rounded-full w-28 text-center">{(item as Product).stock} en stock</p>
+                    )}
+                    <p className="text-lg font-bold text-blue-600 dark:text-blue-400 w-24 text-right">
+                         {isProduct ? `$${(item as Product).salePrice.toFixed(2)}` : renderServicePrice(item as Service)}
+                    </p>
+                </div>
+            </button>
+        );
+    }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
       {/* Left side: Product Selection */}
@@ -316,30 +387,31 @@ const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, servic
               <PlusCircleIcon className="h-6 w-6" />
               <span className="hidden sm:inline font-semibold text-lg">Venta Manual</span>
           </button>
+           <div className="flex items-center bg-slate-200 dark:bg-slate-900/50 p-1 rounded-lg">
+                <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-blue-600' : 'text-slate-500 hover:bg-slate-300/50 dark:hover:bg-slate-700/50'}`}
+                aria-label="Vista de cuadrícula"
+                title="Vista de cuadrícula"
+                >
+                    <GridIcon className="w-5 h-5" />
+                </button>
+                <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-blue-600' : 'text-slate-500 hover:bg-slate-300/50 dark:hover:bg-slate-700/50'}`}
+                aria-label="Vista de lista"
+                title="Vista de lista"
+                >
+                    <ListBulletIcon className="w-5 h-5" />
+                </button>
+            </div>
         </div>
         <div className="flex-grow overflow-y-auto pr-2">
             {searchTerm === '' && selectedCategory === 'all' && top10Products.length > 0 && (
                 <div className="mb-8">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">🔥 Productos Más Vendidos</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {top10Products.map(product => (
-                            <button
-                                key={product.id}
-                                onClick={() => handleProductClick(product)}
-                                className="relative bg-white dark:bg-slate-800 p-4 rounded-lg text-left hover:scale-105 transition-transform duration-200 border-2 border-amber-400 shadow-lg overflow-hidden"
-                            >
-                                <div className="absolute top-2 right-2 flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
-                                    <StarIcon className="w-3 h-3"/>
-                                    <span>TOP</span>
-                                </div>
-                                <h3 className="font-bold text-slate-800 dark:text-white truncate text-lg mt-1">{product.name}</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">{product.category}</p>
-                                <div className="flex justify-between items-end mt-2">
-                                    <p className="text-lg font-bold text-blue-600 dark:text-blue-400">${product.salePrice.toFixed(2)}</p>
-                                    <p className="text-xs font-semibold bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">{product.stock} disp.</p>
-                                </div>
-                            </button>
-                        ))}
+                    <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
+                        {top10Products.map(product => renderItem(product))}
                     </div>
                 </div>
             )}
@@ -347,36 +419,9 @@ const PointOfSale: React.FC<PointOfSaleProps> = ({ products, setProducts, servic
                 {searchTerm === '' && selectedCategory === 'all' && top10Products.length > 0 && (
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Todos los Productos</h2>
                 )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {allServicesForDisplay.map(service => (
-                    <button 
-                        key={service.id}
-                        onClick={() => handleServiceClick(service)}
-                        className="bg-white dark:bg-slate-800 p-4 rounded-lg text-left hover:scale-105 transition-transform duration-200 border border-slate-200 dark:border-slate-700"
-                    >
-                        <h3 className="font-bold text-slate-800 dark:text-white truncate text-lg">{service.name}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Servicio</p>
-                        <div className="flex justify-between items-end mt-2">
-                        <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                            {renderServicePrice(service)}
-                        </p>
-                        </div>
-                    </button>
-                    ))}
-                    {filteredProducts.map(product => (
-                    <button 
-                        key={product.id}
-                        onClick={() => handleProductClick(product)}
-                        className="bg-white dark:bg-slate-800 p-4 rounded-lg text-left hover:scale-105 transition-transform duration-200 border border-slate-200 dark:border-slate-700"
-                    >
-                        <h3 className="font-bold text-slate-800 dark:text-white truncate text-lg">{product.name}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">{product.category}</p>
-                        <div className="flex justify-between items-end mt-2">
-                        <p className="text-lg font-bold text-blue-600 dark:text-blue-400">${product.salePrice.toFixed(2)}</p>
-                        <p className="text-xs font-semibold bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">{product.stock} disp.</p>
-                        </div>
-                    </button>
-                    ))}
+                <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
+                    {allServicesForDisplay.map(service => renderItem(service))}
+                    {filteredProducts.map(product => renderItem(product))}
                 </div>
              </div>
         </div>
